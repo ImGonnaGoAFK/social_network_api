@@ -1,5 +1,5 @@
 const { ObjectId } = require("mongoose").Types;
-const { User, Thought } = require("../models");
+const { User, Thought, reaction } = require("../models");
 
 module.exports = {
   async getThoughts(req, res) {
@@ -32,20 +32,20 @@ module.exports = {
   },
   async createThought(req, res) {
     try {
-      const { userId } = req.body;
-      if (!ObjectId.isValid(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
+      const { username } = req.body;
+      if (!username) {
+        return res.status(400).json({ message: "Username is required" });
       }
       const thought = await Thought.create(req.body);
       const user = await User.findOneAndUpdate(
-        { _id: userId },
+        { username: username },
         { $push: { thoughts: thought._id } },
         { new: true }
       );
       if (!user) {
         return res
           .status(404)
-          .json({ message: "Thought created but no user with that ID found" });
+          .json({ message: "Thought created but no user with that username found" });
       }
       res.json(thought);
     } catch (err) {
@@ -55,17 +55,27 @@ module.exports = {
   },
   async deleteThought(req, res) {
     try {
-      const { thoughtId } = req.params;
+      const { thoughtId, userId } = req.params;
       if (!ObjectId.isValid(thoughtId)) {
         return res.status(400).json({ message: "Invalid thought ID" });
       }
-      const thought = await Thought.findOneAndRemove({ _id: thoughtId });
+      const thought = await Thought.findOneAndDelete({ _id: thoughtId });
 
       if (!thought) {
         return res.status(404).json({ message: "No such thought exists" });
       }
 
-      await Recation.deleteMany({ _id: { $in: thought.reactions } });
+      const user = await User.findOneAndUpdate(
+        { user: userId },
+        { $pull: { user: userId } },
+        { new: true }
+      );
+
+      if (!user) {
+        return res.status(404).json({
+          message: 'Thought deleted, but no user found',
+        });
+      }
       res.json({ message: "Thought successfully deleted" });
     } catch (err) {
       console.error(err);

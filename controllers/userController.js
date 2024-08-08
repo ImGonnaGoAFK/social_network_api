@@ -1,11 +1,24 @@
 const { ObjectId } = require("mongoose").Types;
 const { User, Thought } = require("../models");
 
+const friendCount = async () => {
+  const result = await User.aggregate([
+    { $unwind: "$friends" },
+    { $count: "totalFriends" }
+  ]);
+  return result.length > 0 ? result[0].totalFriends : 0;
+}
+
 module.exports = {
   async getUsers(req, res) {
     try {
       const users = await User.find().populate("thoughts");
-      res.json(users);
+      const count = await friendCount();
+      const userObj = {
+        users,
+        friendCount: count,
+      }
+      res.json(userObj);
     } catch (err) {
       console.error(err);
       return res.status(500).json(err);
@@ -19,11 +32,17 @@ module.exports = {
       }
       const user = await User.findOne({ _id: userId }).populate("thoughts");
 
+      const count = await friendCount();
+      const userObj = {
+        user,
+        friendCount: count,
+      }
+
       if (!user) {
         return res.status(404).json({ message: "No user with that ID" });
       }
 
-      res.json(user);
+      res.json(userObj);
     } catch (err) {
       console.error(err);
       return res.status(500).json(err);
@@ -44,7 +63,7 @@ module.exports = {
       if (!ObjectId.isValid(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
-      const user = await User.findOneAndRemove({ _id: userId });
+      const user = await User.findOneAndDelete({ _id: userId });
 
       if (!user) {
         return res.status(404).json({ message: "No such user exists" });
