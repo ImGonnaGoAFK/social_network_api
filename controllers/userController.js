@@ -13,9 +13,11 @@ module.exports = {
   },
   async getSingleUser(req, res) {
     try {
-      const user = await User.findOne({ _id: req.params.userId }).populate(
-        "thoughts"
-      );
+      const { userId } = req.params;
+      if (!ObjectId.isValid(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      const user = await User.findOne({ _id: userId }).populate("thoughts");
 
       if (!user) {
         return res.status(404).json({ message: "No user with that ID" });
@@ -38,7 +40,11 @@ module.exports = {
   },
   async deleteUser(req, res) {
     try {
-      const user = await User.findOneAndRemove({ _id: req.params.userId });
+      const { userId } = req.params;
+      if (!ObjectId.isValid(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      const user = await User.findOneAndRemove({ _id: userId });
 
       if (!user) {
         return res.status(404).json({ message: "No such user exists" });
@@ -53,15 +59,19 @@ module.exports = {
   },
   async updateUser(req, res) {
     try {
+      const { userId } = req.params;
+      if (!ObjectId.isValid(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
       const user = await User.findOneAndUpdate(
-        { _id: req.params.userId },
+        { _id: userId },
         { $set: req.body },
         { runValidators: true, new: true }
       );
 
       if (!user) {
-        return res.status(404).json({ message: 'No user with this id!' });
-    }
+        return res.status(404).json({ message: "No user with this id!" });
+      }
 
       res.json(user);
     } catch (err) {
@@ -71,9 +81,15 @@ module.exports = {
   },
   async addFriend(req, res) {
     try {
+      const { userId, friendId } = req.params;
+
+      if (!ObjectId.isValid(userId) || !ObjectId.isValid(friendId)) {
+        return res.status(400).json({ message: "Invalid user or friend ID" });
+      }
+
       const user = await User.findOneAndUpdate(
-        { _id: req.params.userId },
-        { $addToSet: { friends: req.params.friendId } },
+        { _id: userId },
+        { $addToSet: { friends: friendId } },
         { new: true }
       );
 
@@ -89,9 +105,15 @@ module.exports = {
   },
   async removeFriend(req, res) {
     try {
+      const { userId, friendId } = req.params;
+
+      if (!ObjectId.isValid(userId) || !ObjectId.isValid(friendId)) {
+        return res.status(400).json({ message: "Invalid user or friend ID" });
+      }
+
       const user = await User.findOneAndUpdate(
-        { _id: req.params.userId },
-        { $pull: { friends: req.params.friendId } },
+        { _id: userId },
+        { $pull: { friends: friendId } },
         { new: true }
       );
 

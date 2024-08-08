@@ -1,3 +1,6 @@
+const mongoose = require("mongoose");
+const { Schema, model } = mongoose;
+
 const reactionSchema = new Schema(
     {
       reactionId: {
@@ -19,7 +22,9 @@ const reactionSchema = new Schema(
       },
     },
     {
-      _id: false, // Disable the creation of _id field for nested documents
+      _id: false,
     }
   );
+
+  module.exports = Reaction;
   
